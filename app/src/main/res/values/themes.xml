@@ -1,26 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Light theme -->
-    <style name="Theme.OpenRouterChat" parent="Theme.Material3.Light.NoActionBar">
-        <item name="colorPrimary">@color/colorPrimary_light</item>
-        <item name="colorPrimaryContainer">@color/colorPrimaryContainer_light</item>
-        <item name="colorOnPrimary">@color/colorOnPrimary_light</item>
-        <item name="colorOnPrimaryContainer">@color/colorOnPrimaryContainer_light</item>
-        <item name="colorSecondary">@color/colorSecondary_light</item>
-        <item name="colorSecondaryContainer">@color/colorSecondaryContainer_light</item>
-        <item name="colorOnSecondary">@color/colorOnSecondary_light</item>
-        <item name="colorOnSecondaryContainer">@color/colorOnSecondaryContainer_light</item>
-        <item name="android:statusBarColor">?attr/colorSurface</item>
-        <item name="colorSurface">@color/colorSurface_light</item>
-        <item name="colorOnSurface">@color/colorOnSurface_light</item>
-        <item name="colorSurfaceVariant">@color/colorSurfaceVariant_light</item>
-        <item name="colorOnSurfaceVariant">@color/colorOnSurfaceVariant_light</item>
-        <item name="colorOutline">@color/colorOutline_light</item>
-        <item name="colorOutlineVariant">@color/colorOutlineVariant_light</item>
-        <item name="colorError">@color/colorError_light</item>
-        <item name="colorErrorContainer">@color/colorErrorContainer_light</item>
-        <item name="colorOnError">@color/colorOnError_light</item>
-        <item name="colorOnErrorContainer">@color/colorOnErrorContainer_light</item>
+    <style name="Theme.OpenRouterChat" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
     <!-- Dark theme -->
