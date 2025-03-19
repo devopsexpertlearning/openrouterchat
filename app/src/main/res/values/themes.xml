@@ -2,28 +2,48 @@
 <resources>
     <!-- Light theme -->
     <style name="Theme.OpenRouterChat" parent="Theme.Material3.Light.NoActionBar">
-        <item name="colorPrimary">@color/purple_500</item>
-        <item name="colorPrimaryContainer">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="colorOnPrimaryContainer">@color/purple_200</item>
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryContainer">@color/teal_700</item>
-        <item name="colorOnSecondary">@color/black</item>
-        <item name="colorOnSecondaryContainer">@color/teal_200</item>
+        <item name="colorPrimary">@color/colorPrimary_light</item>
+        <item name="colorPrimaryContainer">@color/colorPrimaryContainer_light</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary_light</item>
+        <item name="colorOnPrimaryContainer">@color/colorOnPrimaryContainer_light</item>
+        <item name="colorSecondary">@color/colorSecondary_light</item>
+        <item name="colorSecondaryContainer">@color/colorSecondaryContainer_light</item>
+        <item name="colorOnSecondary">@color/colorOnSecondary_light</item>
+        <item name="colorOnSecondaryContainer">@color/colorOnSecondaryContainer_light</item>
         <item name="android:statusBarColor">?attr/colorSurface</item>
+        <item name="colorSurface">@color/colorSurface_light</item>
+        <item name="colorOnSurface">@color/colorOnSurface_light</item>
+        <item name="colorSurfaceVariant">@color/colorSurfaceVariant_light</item>
+        <item name="colorOnSurfaceVariant">@color/colorOnSurfaceVariant_light</item>
+        <item name="colorOutline">@color/colorOutline_light</item>
+        <item name="colorOutlineVariant">@color/colorOutlineVariant_light</item>
+        <item name="colorError">@color/colorError_light</item>
+        <item name="colorErrorContainer">@color/colorErrorContainer_light</item>
+        <item name="colorOnError">@color/colorOnError_light</item>
+        <item name="colorOnErrorContainer">@color/colorOnErrorContainer_light</item>
     </style>
 
     <!-- Dark theme -->
     <style name="Theme.OpenRouterChat.Dark" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="colorPrimary">@color/purple_200</item>
-        <item name="colorPrimaryContainer">@color/purple_500</item>
-        <item name="colorOnPrimary">@color/black</item>
-        <item name="colorOnPrimaryContainer">@color/purple_700</item>
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryContainer">@color/teal_700</item>
-        <item name="colorOnSecondary">@color/black</item>
-        <item name="colorOnSecondaryContainer">@color/teal_200</item>
+        <item name="colorPrimary">@color/colorPrimary_dark</item>
+        <item name="colorPrimaryContainer">@color/colorPrimaryContainer_dark</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary_dark</item>
+        <item name="colorOnPrimaryContainer">@color/colorOnPrimaryContainer_dark</item>
+        <item name="colorSecondary">@color/colorSecondary_dark</item>
+        <item name="colorSecondaryContainer">@color/colorSecondaryContainer_dark</item>
+        <item name="colorOnSecondary">@color/colorOnSecondary_dark</item>
+        <item name="colorOnSecondaryContainer">@color/colorOnSecondaryContainer_dark</item>
         <item name="android:statusBarColor">?attr/colorSurface</item>
+        <item name="colorSurface">@color/colorSurface_dark</item>
+        <item name="colorOnSurface">@color/colorOnSurface_dark</item>
+        <item name="colorSurfaceVariant">@color/colorSurfaceVariant_dark</item>
+        <item name="colorOnSurfaceVariant">@color/colorOnSurfaceVariant_dark</item>
+        <item name="colorOutline">@color/colorOutline_dark</item>
+        <item name="colorOutlineVariant">@color/colorOutlineVariant_dark</item>
+        <item name="colorError">@color/colorError_dark</item>
+        <item name="colorErrorContainer">@color/colorErrorContainer_dark</item>
+        <item name="colorOnError">@color/colorOnError_dark</item>
+        <item name="colorOnErrorContainer">@color/colorOnErrorContainer_dark</item>
     </style>
 
 </resources>
