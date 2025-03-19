@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Include specific data in full backups -->
+    <include domain="database" path="my_database.db"/>
+
+    <!-- Exclude specific data from full backups -->
+    <exclude domain="sharedpref" path="my_preferences.xml"/>
+</full-backup-content>
