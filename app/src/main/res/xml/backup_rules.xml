@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
     <!-- Include specific data in full backups -->
-    <include domain="database" path="my_database.db"/>
+    <include domain="database" path="chat-database"/>
 
     <!-- Exclude specific data from full backups -->
-    <exclude domain="sharedpref" path="my_preferences.xml"/>
+    <exclude domain="sharedpref" path="settings.xml"/>
 </full-backup-content>

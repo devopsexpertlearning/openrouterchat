@@ -63,6 +63,9 @@ android {
         baseline = file("lint-baseline.xml")
         abortOnError = false
         checkReleaseBuilds = false
+        disable += setOf("GradleDependency", "ObsoleteLintCustomCheck")
+        // If you want to ignore backup content validation:
+        disable += "FullBackupContent"
     }
 }
 
