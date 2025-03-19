@@ -6,6 +6,7 @@ import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -34,10 +35,10 @@ class OpenRouterApi(private val apiKey: String) {
 
     suspend fun getModels(): List<Model> {
         try {
-            val response = client.get("https://openrouter.ai/api/v1/models") {
-                header(HttpHeaders.Authorization, "Bearer $apiKey")
-            }
-            return response.body<ModelListResponse>().data
+            val response: ModelListResponse = client.get("https://openrouter.ai/api/v1/models") {
+                header("Authorization", "Bearer $apiKey")
+            }.body()
+            return response.data
         } catch (e: Exception) {
             throw OpenRouterApiException("Failed to fetch models: ${e.message}", e)
         }
@@ -45,18 +46,16 @@ class OpenRouterApi(private val apiKey: String) {
 
     suspend fun sendMessage(model: String, message: String): ChatCompletionResponse {
         try {
-            val requestBody = ChatCompletionRequest(
-                model = model,
-                messages = listOf(
-                    MessageRequest(role = "user", content = message)
-                )
-            )
-            val response = client.post("https://openrouter.ai/api/v1/chat/completions") {
-                header(HttpHeaders.Authorization, "Bearer $apiKey")
+            return client.post("https://openrouter.ai/api/v1/chat/completions") {
+                header("Authorization", "Bearer $apiKey")
                 contentType(ContentType.Application.Json)
-                setBody(requestBody)
-            }
-            return response.body()
+                setBody(ChatCompletionRequest(
+                    model = model,
+                    messages = listOf(
+                        MessageRequest(role = "user", content = message)
+                    )
+                ))
+            }.body()
         } catch (e: Exception) {
             throw OpenRouterApiException("Failed to send message: ${e.message}", e)
         }
