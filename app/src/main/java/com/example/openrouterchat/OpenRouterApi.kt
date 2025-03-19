@@ -17,8 +17,12 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
+import javax.inject.Inject
 
-class OpenRouterApi(private val apiKey: String) {
+class OpenRouterApi @Inject constructor(
+    private val apiKeyProvider: ApiKeyProvider
+) {
 
     private val client = HttpClient(Android) {
         install(ContentNegotiation) {
@@ -33,10 +37,16 @@ class OpenRouterApi(private val apiKey: String) {
         }
     }
 
+    private suspend fun getAuthHeader(): String {
+        val apiKey = apiKeyProvider.getApiKey() 
+            ?: throw OpenRouterApiException("API key not found")
+        return "Bearer $apiKey"
+    }
+
     suspend fun getModels(): List<Model> {
         try {
             val response: ModelListResponse = client.get("https://openrouter.ai/api/v1/models") {
-                header("Authorization", "Bearer $apiKey")
+                header("Authorization", getAuthHeader())
             }.body()
             return response.data
         } catch (e: Exception) {
@@ -44,16 +54,23 @@ class OpenRouterApi(private val apiKey: String) {
         }
     }
 
-    suspend fun sendMessage(model: String, message: String): ChatCompletionResponse {
+    suspend fun sendMessage(
+        model: String, 
+        messages: List<MessageRequest>,
+        temperature: Float? = null,
+        topP: Float? = null,
+        maxTokens: Int? = null
+    ): ChatCompletionResponse {
         try {
             return client.post("https://openrouter.ai/api/v1/chat/completions") {
-                header("Authorization", "Bearer $apiKey")
+                header("Authorization", getAuthHeader())
                 contentType(ContentType.Application.Json)
                 setBody(ChatCompletionRequest(
                     model = model,
-                    messages = listOf(
-                        MessageRequest(role = "user", content = message)
-                    )
+                    messages = messages,
+                    temperature = temperature,
+                    top_p = topP,
+                    max_tokens = maxTokens
                 ))
             }.body()
         } catch (e: Exception) {
@@ -75,7 +92,17 @@ data class ModelListResponse(
 data class Model(
     val id: String,
     val name: String,
-    val context_length: Int
+    val context_length: Int,
+    val description: String? = null,
+    val top_p: Float = 1f,
+    val temperature: Float = 0.7f,
+    val pricing: ModelPricing? = null
+)
+
+@Serializable
+data class ModelPricing(
+    @SerialName("prompt_cost") val promptCost: Double,
+    @SerialName("completion_cost") val completionCost: Double
 )
 
 @Serializable
@@ -85,7 +112,16 @@ data class ChatCompletionRequest(
     val temperature: Float? = null,
     val top_p: Float? = null,
     val max_tokens: Int? = null,
-    val stream: Boolean? = false
+    val stream: Boolean? = false,
+    @SerialName("stop_on_function_call") val stopOnFunctionCall: Boolean? = false,
+    val functions: List<FunctionDefinition>? = null
+)
+
+@Serializable
+data class FunctionDefinition(
+    val name: String,
+    val description: String,
+    val parameters: JsonObject
 )
 
 @Serializable

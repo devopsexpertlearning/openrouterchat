@@ -28,6 +28,9 @@ interface ChatHistoryDao {
     @Query("SELECT * FROM chathistory ORDER BY timestamp DESC")
     fun getAll(): Flow<List<ChatHistory>>
 
+    @Query("SELECT * FROM chathistory WHERE model = :model")
+    fun getByModel(model: String): Flow<List<ChatHistory>>
+
     @Insert
     suspend fun insert(chatHistory: ChatHistory)
 
@@ -36,6 +39,9 @@ interface ChatHistoryDao {
 
     @Query("DELETE FROM chathistory WHERE timestamp < :cutoff")
     suspend fun deleteOldChats(cutoff: Long)
+
+    @Query("DELETE FROM chathistory WHERE model = :model")
+    suspend fun deleteByModel(model: String)
 }
 
 @Database(entities = [ChatHistory::class], version = 1)

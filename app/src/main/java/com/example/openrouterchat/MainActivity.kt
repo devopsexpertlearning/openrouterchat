@@ -61,12 +61,38 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.pullrefresh.PullRefreshIndicator
+import androidx.compose.material3.pullrefresh.pullRefresh
+import androidx.compose.material3.pullrefresh.rememberPullRefreshState
 
 // DataStore for API Key
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 val API_KEY = stringPreferencesKey("api_key")
 
-data class Message(val text: String, val isUser: Boolean)
+data class Message(
+    val text: String, 
+    val isUser: Boolean,
+    val timestamp: Long = System.currentTimeMillis(),
+    val id: String = UUID.randomUUID().toString(),
+    val status: MessageStatus = MessageStatus.SENT
+)
+
+enum class MessageStatus {
+    SENT, ERROR, LOADING
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -82,44 +108,38 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
 
-@Composable
-fun OpenRouterChatApp() {
-    val navController = rememberNavController()
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-
-    // Load API key from DataStore
-    var apiKey by remember { mutableStateOf<String?>(null) }
-    rememberCoroutineScope().launch {
-        apiKey = context.dataStore.data.map { preferences ->
-            preferences[API_KEY]
-        }.first()
-    }
-
-    // Database instance
-    val db = remember {
-        Room.databaseBuilder(
-            context.applicationContext,
-            AppDatabase::class.java, "chat-database"
-        ).build()
-    }
-
-    NavHost(navController = navController, startDestination = if (apiKey.isNullOrEmpty()) "api_key" else "chat") {
-        composable("api_key") {
-            ApiKeyScreen(onApiKeyEntered = { key ->
-                coroutineScope.launch {
-                    context.dataStore.edit { settings ->
-                        settings[API_KEY] = key
-                    }
-                    apiKey = key // Update the apiKey state
-                    navController.navigate("chat")
-                }
-            })
+    @Composable
+    fun OpenRouterChatApp() {
+        val navController = rememberNavController()
+        val apiKeyProvider = remember { ApiKeyProvider(LocalContext.current) }
+        var hasApiKey by remember { mutableStateOf(false) }
+        
+        LaunchedEffect(Unit) {
+            apiKeyProvider.apiKey.collect { key ->
+                hasApiKey = !key.isNullOrEmpty()
+            }
         }
-        composable("chat") {
-            ChatScreen(apiKey = apiKey ?: "", db)
+
+        NavHost(
+            navController = navController,
+            startDestination = if (hasApiKey) "chat" else "api_key"
+        ) {
+            composable("api_key") {
+                ApiKeyScreen(
+                    onApiKeyEntered = { key ->
+                        scope.launch {
+                            apiKeyProvider.setApiKey(key)
+                            navController.navigate("chat") {
+                                popUpTo("api_key") { inclusive = true }
+                            }
+                        }
+                    }
+                )
+            }
+            composable("chat") {
+                ChatScreen(apiKey = apiKey ?: "", db)
+            }
         }
     }
 }
@@ -169,179 +189,262 @@ fun ChatScreen(apiKey: String, db: AppDatabase) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val chatHistoryDao = db.chatHistoryDao()
-//    var chatHistory by remember { mutableStateOf(listOf<ChatHistory>()) } // No longer needed
+    var refreshing by remember { mutableStateOf(false) }
+    val pullRefreshState = rememberPullRefreshState(refreshing, onRefresh = {
+        coroutineScope.launch {
+            refreshing = true
+            // Reload chat history
+            chatHistoryDao.getAll().collect { history ->
+                messages.clear()
+                history.filter { it.model == selectedModel }.forEach { chatHistory ->
+                    messages.addAll(chatHistory.messages)
+                }
+            }
+            refreshing = false
+        }
+    })
 
-    // Fetch models on initial load
     LaunchedEffect(apiKey) {
         if (apiKey.isNotBlank()) {
             try {
                 isLoading = true
                 models = api.getModels()
                 if (models.isNotEmpty()) {
-                    selectedModel = models[0].id // Select the first model by default
+                    selectedModel = models[0].id
                 }
             } catch (e: OpenRouterApiException) {
                 errorMessage = e.message
-                Toast.makeText(context, "Failed to load", Toast.LENGTH_LONG).show()
-
+                Toast.makeText(context, "Failed to load models", Toast.LENGTH_LONG).show()
             } finally {
                 isLoading = false
             }
         }
     }
 
-   // Load chat history and populate messages
     LaunchedEffect(Unit, selectedModel) {
         chatHistoryDao.getAll().collect { history ->
             messages.clear()
             history.filter { it.model == selectedModel }.forEach { chatHistory ->
-                    messages.addAll(chatHistory.messages)
-                }
+                messages.addAll(chatHistory.messages)
+            }
         }
     }
 
-    // Delete old chats
-    LaunchedEffect(Unit) {
-        val tenDaysAgo = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(10)
-        chatHistoryDao.deleteOldChats(tenDaysAgo)
-    }
-
-
-    // Dispose of the API client when the composable is disposed
-    DisposableEffect(api) {
-        onDispose { api.close() }
-    }
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Model Selection Dropdown
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)) {
-            Button(onClick = { expanded = true }, modifier = Modifier.padding(end = 8.dp)) {
-                Text(selectedModel ?: "Select Model")
-            }
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-            ) {
-                models.forEach { model ->
-                    DropdownMenuItem(onClick = {
-                        selectedModel = model.id
-                        expanded = false
-                         // Clear messages when model changes
-                    }, text = {Text(model.name)})
-                }
-            }
-        }
-
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-        }
-
-        errorMessage?.let {
-            Text(
-                text = it,
-                color = Color.Red,
-                modifier = Modifier
-                    .padding(16.dp)
-                    .align(Alignment.CenterHorizontally)
-            )
-        }
-
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 16.dp),
-            reverseLayout = true
-        ) {
-            items(messages) { message ->
-                MessageBubble(message)
-            }
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            OutlinedTextField(
-                value = newMessage,
-                onValueChange = { newMessage = it },
-                label = { Text("Message") },
-                modifier = Modifier.weight(1f),
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    keyboardType = KeyboardType.Text
-                ),
-                singleLine = true
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = {
-                if (newMessage.isNotBlank() && selectedModel != null) {
-                    // Add user message immediately
-                    messages.add(0, Message(newMessage, true))
-
-                    coroutineScope.launch {
-                        try {
-                            val response = api.sendMessage(selectedModel!!, newMessage)
-                            val botMessage = Message(response.choices[0].message.content, false)
-                            messages.add(0, botMessage) // Add to the messages list
-
-                            // Save to database, appending to existing history
-                            val currentChatHistory = chatHistoryDao.getAll().first().firstOrNull { it.model == selectedModel }
-                            val updatedMessages = if (currentChatHistory != null) {
-                                currentChatHistory.messages + listOf(Message(newMessage, true), botMessage)
-                            } else {
-                                listOf(Message(newMessage, true), botMessage)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Top Bar with Model Selection
+            TopAppBar(
+                title = { Text("OpenRouter Chat") },
+                actions = {
+                    Box {
+                        IconButton(onClick = { expanded = true }) {
+                            Text(selectedModel ?: "Select Model")
+                        }
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            models.forEach { model ->
+                                DropdownMenuItem(
+                                    onClick = {
+                                        selectedModel = model.id
+                                        expanded = false
+                                        messages.clear()
+                                    },
+                                    text = { Text(model.name) }
+                                )
                             }
-                            val newChatHistory = ChatHistory(model = selectedModel!!, messages = updatedMessages)
-
-                            if (currentChatHistory != null) {
-                                chatHistoryDao.delete(currentChatHistory) // Delete old entry
-                            }
-                            chatHistoryDao.insert(newChatHistory) // Insert new entry
-
-
-                        } catch (e: OpenRouterApiException) {
-                            errorMessage = e.message
-                            Toast.makeText(context, "Failed to send message", Toast.LENGTH_LONG).show()
-                        } finally {
-                            isLoading = false
-                            newMessage = ""
                         }
                     }
+                    // Clear Chat History Button
+                    IconButton(onClick = {
+                        coroutineScope.launch {
+                            selectedModel?.let { model ->
+                                chatHistoryDao.deleteByModel(model)
+                                messages.clear()
+                            }
+                        }
+                    }) {
+                        Icon(Icons.Default.Delete, "Clear History")
+                    }
                 }
-            }) {
-                Text("Send")
+            )
+
+            // Chat Messages
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                reverseLayout = true,
+            ) {
+                items(messages, key = { it.id }) { message ->
+                    MessageBubble(
+                        message = message,
+                        onRetry = { failedMessage ->
+                            if (selectedModel != null && failedMessage.status == MessageStatus.ERROR) {
+                                coroutineScope.launch {
+                                    val retryIndex = messages.indexOf(failedMessage)
+                                    if (retryIndex >= 0) {
+                                        messages[retryIndex] = failedMessage.copy(status = MessageStatus.LOADING)
+                                        try {
+                                            val response = api.sendMessage(selectedModel!!, failedMessage.text)
+                                            val botMessage = Message(
+                                                response.choices[0].message.content,
+                                                false
+                                            )
+                                            messages[retryIndex] = botMessage
+                                            
+                                            // Update database
+                                            val currentHistory = chatHistoryDao.getByModel(selectedModel!!).firstOrNull()
+                                            val updatedMessages = currentHistory?.messages?.toMutableList() ?: mutableListOf()
+                                            updatedMessages.add(botMessage)
+                                            val newHistory = ChatHistory(
+                                                model = selectedModel!!,
+                                                messages = updatedMessages
+                                            )
+                                            if (currentHistory != null) {
+                                                chatHistoryDao.delete(currentHistory)
+                                            }
+                                            chatHistoryDao.insert(newHistory)
+                                            
+                                        } catch (e: Exception) {
+                                            messages[retryIndex] = failedMessage.copy(status = MessageStatus.ERROR)
+                                            errorMessage = e.message
+                                            Toast.makeText(context, "Failed to retry message", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+
+            // Input Area
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = newMessage,
+                        onValueChange = { newMessage = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Type a message...") },
+                        maxLines = 5
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            if (newMessage.isNotBlank() && selectedModel != null) {
+                                val userMessage = Message(newMessage, true)
+                                messages.add(0, userMessage)
+                                val botMessage = Message("", false, status = MessageStatus.LOADING)
+                                messages.add(0, botMessage)
+                                
+                                coroutineScope.launch {
+                                    try {
+                                        val response = api.sendMessage(selectedModel!!, newMessage)
+                                        val updatedBotMessage = botMessage.copy(
+                                            text = response.choices[0].message.content,
+                                            status = MessageStatus.SENT
+                                        )
+                                        val messageIndex = messages.indexOf(botMessage)
+                                        if (messageIndex >= 0) {
+                                            messages[messageIndex] = updatedBotMessage
+                                        }
+
+                                        // Update database
+                                        val currentHistory = chatHistoryDao.getByModel(selectedModel!!).firstOrNull()
+                                        val updatedMessages = currentHistory?.messages?.toMutableList() ?: mutableListOf()
+                                        updatedMessages.addAll(listOf(userMessage, updatedBotMessage))
+                                        val newHistory = ChatHistory(
+                                            model = selectedModel!!,
+                                            messages = updatedMessages
+                                        )
+                                        if (currentHistory != null) {
+                                            chatHistoryDao.delete(currentHistory)
+                                        }
+                                        chatHistoryDao.insert(newHistory)
+
+                                    } catch (e: Exception) {
+                                        val messageIndex = messages.indexOf(botMessage)
+                                        if (messageIndex >= 0) {
+                                            messages[messageIndex] = botMessage.copy(status = MessageStatus.ERROR)
+                                        }
+                                        errorMessage = e.message
+                                        Toast.makeText(context, "Failed to send message", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                newMessage = ""
+                            }
+                        },
+                        enabled = newMessage.isNotBlank() && selectedModel != null
+                    ) {
+                        Icon(Icons.Default.Send, "Send")
+                    }
+                }
             }
         }
+
+        PullRefreshIndicator(refreshing, pullRefreshState, Modifier.align(Alignment.TopCenter))
     }
 }
 
 @Composable
-fun MessageBubble(message: Message) {
+fun MessageBubble(message: Message, onRetry: (Message) -> Unit) {
     val backgroundColor = if (message.isUser) Purple40 else PurpleGrey40
-    val textColor = if (message.isUser) Color.White else Color.Black
     val alignment = if (message.isUser) Alignment.CenterEnd else Alignment.CenterStart
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 4.dp),
+        horizontalAlignment = if (message.isUser) Alignment.End else Alignment.Start
     ) {
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = backgroundColor,
-            modifier = Modifier
-                .align(alignment)
-                .padding(8.dp)
+            modifier = Modifier.padding(horizontal = 8.dp)
         ) {
-            Text(
-                text = message.text,
-                modifier = Modifier.padding(8.dp),
-                color = textColor
-            )
+            Column(modifier = Modifier.padding(8.dp)) {
+                if (message.status == MessageStatus.LOADING) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = Color.White
+                    )
+                } else {
+                    Text(
+                        text = message.text,
+                        color = if (message.isUser) Color.White else Color.Black
+                    )
+                }
+                
+                if (message.status == MessageStatus.ERROR) {
+                    IconButton(onClick = { onRetry(message) }) {
+                        Icon(Icons.Default.Refresh, "Retry", tint = Color.Red)
+                    }
+                }
+            }
         }
+        
+        Text(
+            text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(message.timestamp)),
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(horizontal = 12.dp),
+            color = Color.Gray
+        )
     }
 }
 
