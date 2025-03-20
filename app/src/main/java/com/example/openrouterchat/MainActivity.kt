@@ -77,6 +77,7 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.pullrefresh.PullRefreshIndicator
 import androidx.compose.material3.pullrefresh.pullRefresh
 import androidx.compose.material3.pullrefresh.rememberPullRefreshState
+import dagger.hilt.android.AndroidEntryPoint
 
 // DataStore for API Key
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -94,6 +95,7 @@ enum class MessageStatus {
     SENT, ERROR, LOADING
 }
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
