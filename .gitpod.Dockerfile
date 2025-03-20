@@ -1,15 +1,18 @@
 # Use Gitpod's full workspace image as base
 FROM gitpod/workspace-full
 
-# Remove Java 11 if installed
-RUN sudo apt remove -y openjdk-11-* && sudo apt autoremove -y
+# Remove all existing Java versions (including SDKMAN! Java)
+RUN sudo apt remove --purge -y openjdk-* && sudo apt autoremove -y && rm -rf /home/gitpod/.sdkman/candidates/java /home/gitpod/.sdkman
+
+# Update package list
+RUN sudo apt update
 
 # Install OpenJDK 17
-RUN sudo apt update && sudo apt install -y openjdk-17-jdk
+RUN sudo apt install -y openjdk-17-jdk
 
-# Ensure Java 17 is the default
-RUN sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-17-openjdk-amd64/bin/java 1 && \
-    sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+# Set Java 17 as default globally in all shell profiles
+RUN echo "export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" | sudo tee -a /etc/profile /etc/bash.bashrc /home/gitpod/.bashrc /home/gitpod/.zshrc /home/gitpod/.profile /home/gitpod/.bash_profile /home/gitpod/.bashrc.d/custom.sh /home/gitpod/.zlogin
+RUN echo "export PATH=\$JAVA_HOME/bin:\$PATH" | sudo tee -a /etc/profile /etc/bash.bashrc /home/gitpod/.bashrc /home/gitpod/.zshrc /home/gitpod/.profile /home/gitpod/.bash_profile /home/gitpod/.bashrc.d/custom.sh /home/gitpod/.zlogin
 
 # Verify Java version
 RUN java -version
