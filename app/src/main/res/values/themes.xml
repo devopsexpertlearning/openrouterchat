@@ -1,33 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Light theme -->
     <style name="Theme.OpenRouterChat" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>
-
-    <!-- Dark theme -->
-    <style name="Theme.OpenRouterChat.Dark" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="colorPrimary">@color/colorPrimary_dark</item>
-        <item name="colorPrimaryContainer">@color/colorPrimaryContainer_dark</item>
-        <item name="colorOnPrimary">@color/colorOnPrimary_dark</item>
-        <item name="colorOnPrimaryContainer">@color/colorOnPrimaryContainer_dark</item>
-        <item name="colorSecondary">@color/colorSecondary_dark</item>
-        <item name="colorSecondaryContainer">@color/colorSecondaryContainer_dark</item>
-        <item name="colorOnSecondary">@color/colorOnSecondary_dark</item>
-        <item name="colorOnSecondaryContainer">@color/colorOnSecondaryContainer_dark</item>
-        <item name="android:statusBarColor">?attr/colorSurface</item>
-        <item name="colorSurface">@color/colorSurface_dark</item>
-        <item name="colorOnSurface">@color/colorOnSurface_dark</item>
-        <item name="colorSurfaceVariant">@color/colorSurfaceVariant_dark</item>
-        <item name="colorOnSurfaceVariant">@color/colorOnSurfaceVariant_dark</item>
-        <item name="colorOutline">@color/colorOutline_dark</item>
-        <item name="colorOutlineVariant">@color/colorOutlineVariant_dark</item>
-        <item name="colorError">@color/colorError_dark</item>
-        <item name="colorErrorContainer">@color/colorErrorContainer_dark</item>
-        <item name="colorOnError">@color/colorOnError_dark</item>
-        <item name="colorOnErrorContainer">@color/colorOnErrorContainer_dark</item>
-    </style>
-
 </resources>
