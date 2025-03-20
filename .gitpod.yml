@@ -1,0 +1,24 @@
+image:
+  file: .gitpod.Dockerfile
+
+tasks:
+  - init: |
+      export ANDROID_HOME=/opt/android-sdk
+      export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+      yes | sdkmanager --licenses
+
+      echo "Java Version:"
+      java -version
+
+      echo "Installed Android SDK Components:"
+      sdkmanager --list
+
+ports:
+  - port: 5554
+    onOpen: ignore  # For Android Emulator (if needed in the future)
+
+vscode:
+  extensions:
+    - ms-vscode.vscode-java-pack
+    - ms-androidtools.vscode-android-emulator
+    - ms-vscode.android-emulator
