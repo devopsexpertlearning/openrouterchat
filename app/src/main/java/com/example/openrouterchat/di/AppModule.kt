@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Room
 import com.example.openrouterchat.AppDatabase
 import com.example.openrouterchat.ChatHistoryDao
+import com.example.openrouterchat.ChatRepository
+import com.example.openrouterchat.OpenRouterApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -28,5 +30,14 @@ object AppModule {
     @Singleton
     fun provideChatHistoryDao(database: AppDatabase): ChatHistoryDao {
         return database.chatHistoryDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatRepository(
+        api: OpenRouterApi,
+        database: AppDatabase
+    ): ChatRepository {
+        return ChatRepository(api, database.chatHistoryDao())
     }
 }

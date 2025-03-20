@@ -116,9 +116,12 @@ class MainActivity : ComponentActivity() {
         val navController = rememberNavController()
         val apiKeyProvider = remember { ApiKeyProvider(LocalContext.current) }
         var hasApiKey by remember { mutableStateOf(false) }
+        val scope = rememberCoroutineScope()
+        var apiKey by remember { mutableStateOf<String?>(null) }
         
         LaunchedEffect(Unit) {
             apiKeyProvider.apiKey.collect { key ->
+                apiKey = key
                 hasApiKey = !key.isNullOrEmpty()
             }
         }

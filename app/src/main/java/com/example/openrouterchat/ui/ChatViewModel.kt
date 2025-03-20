@@ -1,7 +1,20 @@
+package com.example.openrouterchat.ui
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.openrouterchat.ChatRepository
+import com.example.openrouterchat.Model
+import com.example.openrouterchat.data.ModelState
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
 @HiltViewModel
 class ChatViewModel @Inject constructor(
-    private val repository: ChatRepository,
-    private val savedStateHandle: SavedStateHandle
+    private val repository: ChatRepository
 ) : ViewModel() {
 
     private val _modelStates = MutableStateFlow<Map<String, ModelState>>(emptyMap())

@@ -1,6 +1,14 @@
+package com.example.openrouterchat.data
+
+import com.example.openrouterchat.OpenRouterApi
+import com.example.openrouterchat.ChatHistoryDao
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
 class ChatRepository @Inject constructor(
     private val api: OpenRouterApi,
-    private val messageDao: ChatMessageDao
+    private val chatHistoryDao: ChatHistoryDao
 ) {
     suspend fun sendMessage(message: String): Flow<ChatMessage> = flow {
         try {
